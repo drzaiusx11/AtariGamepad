@@ -1,3 +1,5 @@
+#define PADDLE1_PIN 7
+#define PADDLE2_PIN 3
 
 volatile bool updatePaddle1 = false;
 volatile bool updatePaddle2 = false;
@@ -10,10 +12,8 @@ void setPaddle2Flag() {
   updatePaddle2 = true;
 }
 
-#define PADDLE1_PIN 7
-#define PADDLE2_PIN 3
-
 void setup() {
+  Serial.begin(9600);
   pinMode(PADDLE1_PIN, INPUT);
   pinMode(PADDLE2_PIN, INPUT);
   attachInterrupt(digitalPinToInterrupt(PADDLE1_PIN), setPaddle1Flag, RISING);
@@ -32,6 +32,7 @@ uint8_t calcPaddleValue(unsigned long* lastTime) {
 
 unsigned long paddle1Value = 0;
 unsigned long paddle2Value = 0;
+
 void loop() {
   if (updatePaddle1 == true) {
     paddle1Value = calcPaddleValue(&paddle1Timer);
@@ -44,3 +45,4 @@ void loop() {
   Serial.print(paddle2Value);
   Serial.println("");
 }
+
