@@ -1,4 +1,6 @@
-#define PADDLE1_PIN 7
+#include <Joystick.h>
+
+#define PADDLE1_PIN 2
 #define PADDLE2_PIN 3
 
 #define MODE_PADDLE 1
@@ -13,10 +15,15 @@ void setup() {
 
   switch(mode) {
     case MODE_PADDLE:
-      pinMode(PADDLE1_PIN, INPUT);
-      pinMode(PADDLE2_PIN, INPUT);
-      attachInterrupt(digitalPinToInterrupt(PADDLE1_PIN), setPaddle1Flag, RISING);
+      pinMode(PADDLE2_PIN, OUTPUT);
+      digitalWrite(PADDLE2_PIN, LOW);
       attachInterrupt(digitalPinToInterrupt(PADDLE2_PIN), setPaddle2Flag, RISING);
+      pinMode(PADDLE2_PIN, INPUT);      
+
+      pinMode(PADDLE1_PIN, OUTPUT);
+      digitalWrite(PADDLE1_PIN, LOW);
+      attachInterrupt(digitalPinToInterrupt(PADDLE1_PIN), setPaddle1Flag, RISING);
+      pinMode(PADDLE1_PIN, INPUT);
     break;
   }
 }
@@ -39,18 +46,27 @@ void setPaddle2Flag() {
   updatePaddle2 = true;
 }
 
-uint8_t calcPaddleValue(unsigned long* lastTime, paddlePin) {
-  unsigned long now = micros();
-  unsigned long newValue = now - *lastTime;
-  *lastTime = now;
-  pinMode(paddlePin, OUTPUT);
-  digitalWrite(paddlePin, LOW);
-  pinMode(paddlePin, INPUT);
-  return newValue;
-}
-
 unsigned long paddle1Value = 0;
 unsigned long paddle2Value = 0;
+
+uint8_t calcPaddleValue(unsigned long* lastTime, uint8_t paddlePin, void (*setFlag)(void)) {
+  detachInterrupt(paddlePin);
+    
+  unsigned long now = micros();
+  unsigned long newValue = now - *lastTime;
+
+  Serial.print(paddle1Value, DEC);
+  Serial.print(", ");
+  Serial.println(paddle2Value, DEC);
+  
+  pinMode(paddlePin, OUTPUT);
+  digitalWrite(paddlePin, LOW);
+  attachInterrupt(digitalPinToInterrupt(paddlePin), setFlag, RISING);
+  *lastTime = micros();
+  pinMode(paddlePin, INPUT);
+  
+  return newValue;
+}
 
 void loop() {
   switch(mode) {
@@ -74,15 +90,13 @@ void handleJoystick() {
 
 void handlePaddles() {
   if (updatePaddle1 == true) {
-    paddle1Value = calcPaddleValue(&paddle1Timer, PADDLE1_PIN);
+    updatePaddle1 = false;
+    paddle1Value = calcPaddleValue(&paddle1Timer, PADDLE1_PIN, setPaddle1Flag);
   }
   if (updatePaddle2 == true) {
-    paddle2Value = calcPaddleValue(&paddle2Timer, PADDLE2_PIN);
+    updatePaddle2 = false;
+    paddle2Value = calcPaddleValue(&paddle2Timer, PADDLE2_PIN, setPaddle2Flag);
   }
-  Serial.print(paddle1Value);
-  Serial.print(" ");
-  Serial.print(paddle2Value);
-  Serial.println("");
 }
 
 void handleDriving() {
